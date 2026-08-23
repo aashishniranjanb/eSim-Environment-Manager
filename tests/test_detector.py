@@ -1,3 +1,4 @@
+import os
 import subprocess
 from unittest.mock import patch, MagicMock
 from src.core.tool_detector import ToolDetector
@@ -73,7 +74,8 @@ def test_detect_missing_executable():
         }
     }
     
-    with patch("shutil.which", return_value=None):
+    with patch("shutil.which", return_value=None), \
+         patch("os.path.isfile", return_value=False):
         detector = ToolDetector(tools_config)
         results = detector.scan()
         
@@ -95,13 +97,14 @@ def test_detect_failed_version_command():
         }
     }
     
+    expected_path = os.path.abspath("/usr/bin/git")
     with patch("shutil.which", return_value="/usr/bin/git"), \
          patch("subprocess.run", side_effect=subprocess.SubprocessError("Process execution error")):
         detector = ToolDetector(tools_config)
         results = detector.scan()
         
         assert results["git"]["installed"] is True
-        assert results["git"]["executable_path"] == "/usr/bin/git"
+        assert results["git"]["executable_path"] == expected_path
         assert results["git"]["parsed_version"] is None
         assert results["git"]["status"] == "ERROR"
         assert "Process execution error" in results["git"]["error"]

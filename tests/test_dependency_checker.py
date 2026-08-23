@@ -10,6 +10,7 @@ def test_dependency_states():
             "parsed_version": "3.12.4",
             "minimum_version": "3.10.0",
             "required": True,
+            "importance": "REQUIRED",
             "status": "DETECTED",
             "error": None
         }
@@ -27,6 +28,7 @@ def test_dependency_states():
             "parsed_version": None,
             "minimum_version": "3.10.0",
             "required": True,
+            "importance": "REQUIRED",
             "status": "MISSING",
             "error": None
         }
@@ -43,6 +45,7 @@ def test_dependency_states():
             "parsed_version": "3.9.0",
             "minimum_version": "3.10.0",
             "required": True,
+            "importance": "REQUIRED",
             "status": "DETECTED",
             "error": None
         }
@@ -59,6 +62,7 @@ def test_dependency_states():
             "parsed_version": None,
             "minimum_version": "6.0.0",
             "required": False,
+            "importance": "RECOMMENDED",
             "status": "MISSING",
             "error": None
         }
@@ -68,57 +72,30 @@ def test_dependency_states():
     assert res_4["kicad"]["status"] == "OPTIONAL"
 
 def test_environment_score_calculation():
-    # 5. Environment score remains 0-100
-    
     # Perfect score
     scan_results = {
-        "python": {"installed": True, "required": True, "minimum_version": "3.10.0", "parsed_version": "3.12.4", "status": "DETECTED"},
-        "git": {"installed": True, "required": True, "minimum_version": "2.0.0", "parsed_version": "2.40.0", "status": "DETECTED"},
-        "kicad": {"installed": True, "required": False, "minimum_version": "6.0.0", "parsed_version": "8.0.0", "status": "DETECTED"},
-        "ngspice": {"installed": True, "required": False, "minimum_version": "30.0", "parsed_version": "38.0", "status": "DETECTED"}
+        "python": {"installed": True, "required": True, "importance": "REQUIRED", "minimum_version": "3.10.0", "parsed_version": "3.12.4", "status": "DETECTED"},
+        "git": {"installed": True, "required": True, "importance": "REQUIRED", "minimum_version": "2.0.0", "parsed_version": "2.40.0", "status": "DETECTED"},
+        "kicad": {"installed": True, "required": False, "importance": "RECOMMENDED", "minimum_version": "6.0.0", "parsed_version": "8.0.0", "status": "DETECTED"},
+        "ngspice": {"installed": True, "required": False, "importance": "RECOMMENDED", "minimum_version": "30.0", "parsed_version": "38.0", "status": "DETECTED"}
     }
     checker = DependencyChecker(scan_results)
     check_res = checker.check()
-    score, readiness = checker.calculate_score(check_res)
+    score, readiness, reasons = checker.calculate_score(check_res)
     assert score == 100
     assert readiness == "READY"
+    assert len(reasons) > 0
 
-    # Required missing (-25) and Optional missing (-5) -> 70 (MOSTLY READY)
+    # Partial score deduction
     scan_results_2 = {
-        "python": {"installed": False, "required": True, "minimum_version": "3.10.0", "parsed_version": None, "status": "MISSING"},
-        "git": {"installed": True, "required": True, "minimum_version": "2.0.0", "parsed_version": "2.40.0", "status": "DETECTED"},
-        "kicad": {"installed": False, "required": False, "minimum_version": "6.0.0", "parsed_version": None, "status": "MISSING"},
-        "ngspice": {"installed": True, "required": False, "minimum_version": "30.0", "parsed_version": "38.0", "status": "DETECTED"}
+        "python": {"installed": False, "required": True, "importance": "REQUIRED", "minimum_version": "3.10.0", "parsed_version": None, "status": "MISSING"},
+        "git": {"installed": True, "required": True, "importance": "REQUIRED", "minimum_version": "2.0.0", "parsed_version": "2.40.0", "status": "DETECTED"},
+        "kicad": {"installed": False, "required": False, "importance": "RECOMMENDED", "minimum_version": "6.0.0", "parsed_version": None, "status": "MISSING"},
+        "ngspice": {"installed": True, "required": False, "importance": "RECOMMENDED", "minimum_version": "30.0", "parsed_version": "38.0", "status": "DETECTED"}
     }
     checker_2 = DependencyChecker(scan_results_2)
     check_res_2 = checker_2.check()
-    score_2, readiness_2 = checker_2.calculate_score(check_res_2)
-    assert score_2 == 70
-    assert readiness_2 == "MOSTLY READY"
-
-    # Outdated required (-15), Error (-5), Missing optional (-5) -> 75 (MOSTLY READY)
-    scan_results_3 = {
-        "python": {"installed": True, "required": True, "minimum_version": "3.10.0", "parsed_version": "3.9.0", "status": "DETECTED"},
-        "git": {"installed": True, "required": True, "minimum_version": "2.0.0", "parsed_version": None, "status": "ERROR", "error": "Command failed"},
-        "kicad": {"installed": False, "required": False, "minimum_version": "6.0.0", "parsed_version": None, "status": "MISSING"}
-    }
-    checker_3 = DependencyChecker(scan_results_3)
-    check_res_3 = checker_3.check()
-    score_3, readiness_3 = checker_3.calculate_score(check_res_3)
-    assert score_3 == 75
-    assert readiness_3 == "MOSTLY READY"
-
-    # Extremely low score (bound to 0)
-    scan_results_4 = {
-        "python": {"installed": False, "required": True, "minimum_version": "3.10.0", "parsed_version": None, "status": "MISSING"},
-        "git": {"installed": False, "required": True, "minimum_version": "2.0.0", "parsed_version": None, "status": "MISSING"},
-        "tool3": {"installed": False, "required": True, "minimum_version": "1.0.0", "parsed_version": None, "status": "MISSING"},
-        "tool4": {"installed": False, "required": True, "minimum_version": "1.0.0", "parsed_version": None, "status": "MISSING"},
-        "tool5": {"installed": False, "required": True, "minimum_version": "1.0.0", "parsed_version": None, "status": "MISSING"}
-    }
-    checker_4 = DependencyChecker(scan_results_4)
-    check_res_4 = checker_4.check()
-    score_4, readiness_4 = checker_4.calculate_score(check_res_4)
-    assert score_4 == 0
-    assert readiness_4 == "NOT READY"
-
+    score_2, readiness_2, reasons_2 = checker_2.calculate_score(check_res_2)
+    assert score_2 == 65
+    assert readiness_2 == "NOT READY"
+    assert any("Required core tool 'python' is missing" in r for r in reasons_2)

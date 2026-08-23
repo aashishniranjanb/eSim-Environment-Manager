@@ -1,18 +1,52 @@
 {
+  "metadata": {
+    "schema_version": "2.0",
+    "updated": "2026-08-23"
+  },
+  "profiles": {
+    "eSim_basic": {
+      "name": "eSim Core Workflow",
+      "description": "Standard environment required for eSim schematic capture and circuit simulation.",
+      "required": ["python", "git"],
+      "recommended": ["kicad", "ngspice"]
+    },
+    "digital_design": {
+      "name": "Digital Design & RTL",
+      "description": "HDL synthesis, simulation, and verification toolchain.",
+      "required": ["yosys"],
+      "recommended": ["iverilog", "verilator", "ghdl"]
+    },
+    "pcb_design": {
+      "name": "PCB Design & Fabrication",
+      "description": "Schematic entry, footprint layout, and Gerber generation.",
+      "required": ["kicad"],
+      "recommended": ["python", "git"]
+    },
+    "open_source_vlsi": {
+      "name": "Open-Source ASIC / VLSI Flow",
+      "description": "OpenROAD, Magic, and Netgen silicon layout and LVS verification.",
+      "required": [],
+      "recommended": ["yosys", "openroad", "magic", "netgen"]
+    }
+  },
   "tools": [
     {
       "id": "python",
       "display_name": "Python",
       "category": "Core",
-      "command": "python",
-      "commands": {
-        "windows": "python",
-        "linux": "python3",
-        "macos": "python3"
-      },
-      "version_arguments": ["--version"],
+      "importance": "REQUIRED",
       "required": true,
+      "command": "python",
+      "executable_names": ["python.exe", "python3", "python"],
       "minimum_version": "3.10.0",
+      "version_command": ["--version"],
+      "windows_paths": [
+        "%LOCALAPPDATA%\\Programs\\Python\\Python*\\python.exe",
+        "%ProgramFiles%\\Python*\\python.exe",
+        "C:\\Python*\\python.exe"
+      ],
+      "linux_paths": ["/usr/bin/python3", "/usr/local/bin/python3"],
+      "macos_paths": ["/usr/local/bin/python3", "/opt/homebrew/bin/python3"],
       "install_methods": ["winget", "apt", "brew"],
       "update_methods": ["winget", "apt", "brew"],
       "packages": {
@@ -25,10 +59,19 @@
       "id": "git",
       "display_name": "Git",
       "category": "Development",
-      "command": "git",
-      "version_arguments": ["--version"],
+      "importance": "REQUIRED",
       "required": true,
+      "command": "git",
+      "executable_names": ["git.exe", "git"],
       "minimum_version": "2.0.0",
+      "version_command": ["--version"],
+      "windows_paths": [
+        "%ProgramFiles%\\Git\\cmd\\git.exe",
+        "%ProgramFiles%\\Git\\bin\\git.exe",
+        "%ProgramFiles(x86)%\\Git\\cmd\\git.exe"
+      ],
+      "linux_paths": ["/usr/bin/git"],
+      "macos_paths": ["/usr/bin/git", "/opt/homebrew/bin/git"],
       "install_methods": ["winget", "apt", "brew"],
       "update_methods": ["winget", "apt", "brew"],
       "packages": {
@@ -40,11 +83,23 @@
     {
       "id": "kicad",
       "display_name": "KiCad",
-      "category": "EDA",
-      "command": "kicad-cli",
-      "version_arguments": ["--version"],
+      "category": "PCB",
+      "importance": "RECOMMENDED",
       "required": false,
+      "command": "kicad-cli",
+      "executable_names": ["kicad-cli.exe", "kicad.exe", "kicad-cli", "kicad"],
       "minimum_version": "6.0.0",
+      "version_command": ["version"],
+      "version_commands": [["version"], ["--version"]],
+      "windows_paths": [
+        "%ProgramFiles%\\KiCad\\*\\bin\\kicad-cli.exe",
+        "%ProgramFiles%\\KiCad\\*\\bin\\kicad.exe",
+        "%ProgramFiles%\\KiCad\\bin\\kicad-cli.exe",
+        "%ProgramFiles%\\KiCad\\bin\\kicad.exe",
+        "%ProgramFiles(x86)%\\KiCad\\*\\bin\\kicad-cli.exe"
+      ],
+      "linux_paths": ["/usr/bin/kicad-cli", "/usr/bin/kicad"],
+      "macos_paths": ["/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli"],
       "install_methods": ["winget", "apt", "brew"],
       "update_methods": ["winget", "apt", "brew"],
       "packages": {
@@ -57,16 +112,245 @@
       "id": "ngspice",
       "display_name": "Ngspice",
       "category": "Simulation",
-      "command": "ngspice",
-      "version_arguments": ["-v"],
+      "importance": "RECOMMENDED",
       "required": false,
+      "command": "ngspice",
+      "executable_names": ["ngspice.exe", "ngspice_con.exe", "ngspice"],
       "minimum_version": "30.0",
+      "version_command": ["-v"],
+      "windows_paths": [
+        "%ProgramFiles%\\ngspice\\**\\ngspice.exe",
+        "%ProgramFiles%\\Spice64\\**\\ngspice.exe",
+        "C:\\Spice64\\**\\ngspice.exe",
+        "C:\\Spice64\\bin\\ngspice.exe",
+        "C:\\Spice64\\bin\\ngspice_con.exe",
+        "C:\\Spice64_64\\bin\\ngspice.exe",
+        "%LOCALAPPDATA%\\Programs\\ngspice\\bin\\ngspice.exe"
+      ],
+      "linux_paths": ["/usr/bin/ngspice"],
+      "macos_paths": ["/usr/local/bin/ngspice", "/opt/homebrew/bin/ngspice"],
       "install_methods": ["winget", "apt", "brew"],
       "update_methods": ["winget", "apt", "brew"],
       "packages": {
         "windows": "Ngspice.Ngspice",
         "linux": "ngspice",
         "macos": "ngspice"
+      }
+    },
+    {
+      "id": "yosys",
+      "display_name": "Yosys",
+      "category": "Digital Design",
+      "importance": "RECOMMENDED",
+      "required": false,
+      "command": "yosys",
+      "executable_names": ["yosys.exe", "yosys"],
+      "minimum_version": "0.9",
+      "version_command": ["-V"],
+      "windows_paths": [
+        "C:\\oss-cad-suite\\bin\\yosys.exe",
+        "C:\\yosys\\yosys.exe",
+        "%ProgramFiles%\\Yosys\\yosys.exe"
+      ],
+      "linux_paths": ["/usr/bin/yosys", "/usr/local/bin/yosys"],
+      "macos_paths": ["/opt/homebrew/bin/yosys"],
+      "install_methods": ["winget", "apt", "brew"],
+      "update_methods": ["winget", "apt", "brew"],
+      "packages": {
+        "windows": "Yosys.Yosys",
+        "linux": "yosys",
+        "macos": "yosys"
+      }
+    },
+    {
+      "id": "verilator",
+      "display_name": "Verilator",
+      "category": "Digital Design",
+      "importance": "RECOMMENDED",
+      "required": false,
+      "command": "verilator",
+      "executable_names": ["verilator.exe", "verilator_bin.exe", "verilator"],
+      "minimum_version": "4.0.0",
+      "version_command": ["--version"],
+      "windows_paths": [
+        "C:\\oss-cad-suite\\bin\\verilator.exe"
+      ],
+      "linux_paths": ["/usr/bin/verilator", "/usr/local/bin/verilator"],
+      "macos_paths": ["/opt/homebrew/bin/verilator"],
+      "install_methods": ["apt", "brew"],
+      "update_methods": ["apt", "brew"],
+      "packages": {
+        "linux": "verilator",
+        "macos": "verilator"
+      }
+    },
+    {
+      "id": "iverilog",
+      "display_name": "Icarus Verilog",
+      "category": "Digital Design",
+      "importance": "RECOMMENDED",
+      "required": false,
+      "command": "iverilog",
+      "executable_names": ["iverilog.exe", "iverilog"],
+      "minimum_version": "10.0",
+      "version_command": ["-V"],
+      "windows_paths": [
+        "C:\\iverilog\\bin\\iverilog.exe",
+        "%ProgramFiles%\\iverilog\\bin\\iverilog.exe"
+      ],
+      "linux_paths": ["/usr/bin/iverilog"],
+      "macos_paths": ["/opt/homebrew/bin/iverilog"],
+      "install_methods": ["winget", "apt", "brew"],
+      "update_methods": ["winget", "apt", "brew"],
+      "packages": {
+        "windows": "IcarusVerilog.IcarusVerilog",
+        "linux": "iverilog",
+        "macos": "icarus-verilog"
+      }
+    },
+    {
+      "id": "ghdl",
+      "display_name": "GHDL",
+      "category": "Digital Design",
+      "importance": "RECOMMENDED",
+      "required": false,
+      "command": "ghdl",
+      "executable_names": ["ghdl.exe", "ghdl"],
+      "minimum_version": "1.0.0",
+      "version_command": ["--version"],
+      "windows_paths": [
+        "C:\\GHDL\\bin\\ghdl.exe",
+        "%ProgramFiles%\\GHDL\\bin\\ghdl.exe"
+      ],
+      "linux_paths": ["/usr/bin/ghdl"],
+      "macos_paths": ["/opt/homebrew/bin/ghdl"],
+      "install_methods": ["apt", "brew"],
+      "update_methods": ["apt", "brew"],
+      "packages": {
+        "linux": "ghdl",
+        "macos": "ghdl"
+      }
+    },
+    {
+      "id": "qucs_s",
+      "display_name": "Qucs-S",
+      "category": "Simulation",
+      "importance": "OPTIONAL",
+      "required": false,
+      "command": "qucs-s",
+      "executable_names": ["qucs-s.exe", "qucs.exe", "qucs-s"],
+      "minimum_version": "0.0.19",
+      "version_command": ["--version"],
+      "windows_paths": [
+        "%ProgramFiles%\\Qucs-S\\bin\\qucs-s.exe",
+        "C:\\Qucs-S\\bin\\qucs-s.exe"
+      ],
+      "linux_paths": ["/usr/bin/qucs-s"],
+      "macos_paths": ["/Applications/Qucs-S.app/Contents/MacOS/qucs-s"],
+      "install_methods": ["apt"],
+      "update_methods": ["apt"],
+      "packages": {
+        "linux": "qucs-s"
+      }
+    },
+    {
+      "id": "openroad",
+      "display_name": "OpenROAD",
+      "category": "Open VLSI",
+      "importance": "OPTIONAL",
+      "required": false,
+      "command": "openroad",
+      "executable_names": ["openroad.exe", "openroad"],
+      "minimum_version": "2.0",
+      "version_command": ["-version"],
+      "windows_paths": [],
+      "linux_paths": ["/usr/bin/openroad", "/usr/local/bin/openroad"],
+      "macos_paths": [],
+      "install_methods": ["apt"],
+      "update_methods": ["apt"],
+      "packages": {
+        "linux": "openroad"
+      }
+    },
+    {
+      "id": "magic",
+      "display_name": "Magic",
+      "category": "Open VLSI",
+      "importance": "OPTIONAL",
+      "required": false,
+      "command": "magic",
+      "executable_names": ["magic.exe", "magic"],
+      "minimum_version": "8.3",
+      "version_command": ["--version"],
+      "windows_paths": [],
+      "linux_paths": ["/usr/bin/magic", "/usr/local/bin/magic"],
+      "macos_paths": [],
+      "install_methods": ["apt"],
+      "update_methods": ["apt"],
+      "packages": {
+        "linux": "magic"
+      }
+    },
+    {
+      "id": "netgen",
+      "display_name": "Netgen",
+      "category": "Open VLSI",
+      "importance": "OPTIONAL",
+      "required": false,
+      "command": "netgen",
+      "executable_names": ["netgen.exe", "netgen"],
+      "minimum_version": "1.5",
+      "version_command": ["-v"],
+      "windows_paths": [],
+      "linux_paths": ["/usr/bin/netgen", "/usr/local/bin/netgen"],
+      "macos_paths": [],
+      "install_methods": ["apt"],
+      "update_methods": ["apt"],
+      "packages": {
+        "linux": "netgen"
+      }
+    },
+    {
+      "id": "nextpnr",
+      "display_name": "nextpnr",
+      "category": "FPGA",
+      "importance": "OPTIONAL",
+      "required": false,
+      "command": "nextpnr-ice40",
+      "executable_names": ["nextpnr-ice40.exe", "nextpnr-ecp5.exe", "nextpnr-ice40"],
+      "minimum_version": "0.1",
+      "version_command": ["-V"],
+      "windows_paths": [
+        "C:\\oss-cad-suite\\bin\\nextpnr-ice40.exe"
+      ],
+      "linux_paths": ["/usr/bin/nextpnr-ice40"],
+      "macos_paths": ["/opt/homebrew/bin/nextpnr-ice40"],
+      "install_methods": ["apt", "brew"],
+      "update_methods": ["apt", "brew"],
+      "packages": {
+        "linux": "nextpnr-ice40",
+        "macos": "nextpnr"
+      }
+    },
+    {
+      "id": "symbiyosys",
+      "display_name": "SymbiYosys",
+      "category": "Formal Verification",
+      "importance": "OPTIONAL",
+      "required": false,
+      "command": "sbin",
+      "executable_names": ["sby.exe", "sby"],
+      "minimum_version": "1.0",
+      "version_command": ["--version"],
+      "windows_paths": [
+        "C:\\oss-cad-suite\\bin\\sby.exe"
+      ],
+      "linux_paths": ["/usr/bin/sby", "/usr/local/bin/sby"],
+      "macos_paths": [],
+      "install_methods": ["apt"],
+      "update_methods": ["apt"],
+      "packages": {
+        "linux": "symbiyosys"
       }
     }
   ]
