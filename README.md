@@ -66,6 +66,19 @@ All discovery runs, status audits, and package commands are logged with timestam
 
 ---
 
+## Screenshots
+
+### 1. Dashboard
+![Dashboard](screenshots/fig_dashboard.png)
+
+### 2. Tool Inventory
+![Tool Inventory](screenshots/fig_tool_inventory.png)
+
+### 3. EDA Profiles
+![EDA Profiles](screenshots/fig_eda_workflow.png)
+
+---
+
 ## Architecture
 
 ```text
