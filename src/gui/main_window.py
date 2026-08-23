@@ -269,6 +269,48 @@ class MainWindow(QMainWindow):
         # Set default page
         self.switch_page("dashboard")
 
+    def run_doctor_gui(self):
+        from src.core.environment_doctor import EnvironmentDoctor
+        doctor = EnvironmentDoctor(self.env_mgr.scan_results, self.env_mgr.dependency_results, self.env_mgr)
+        res = doctor.diagnose("eSim_basic")
+        
+        msg = f"<b>Health Score:</b> {res.get('health_score')}/100<br>"
+        msg += f"<b>Readiness:</b> {res.get('readiness')}<br><br>"
+        
+        msg += "<b>Findings:</b><ul>"
+        for f in res.get('findings', []):
+            msg += f"<li>{f}</li>"
+        msg += "</ul><br>"
+        
+        msg += "<b>Recommendations:</b><ul>"
+        for r in res.get('recommendations', []):
+            msg += f"<li>{r}</li>"
+        msg += "</ul><br>"
+        
+        msg += "<b>Repair Plan:</b><ol>"
+        for p in res.get('repair_plan', []):
+            msg += f"<li>{p['action']} ({p['tool']})</li>"
+        msg += "</ol>"
+        
+        QMessageBox.information(self, f"Environment Doctor - {res.get('profile', 'eSim Basic')}", msg)
+
+    def export_report_gui(self):
+        filepath, _ = QFileDialog.getSaveFileName(self, "Export Environment Report", "esim_environment_report.json", "JSON Files (*.json);;Text Files (*.txt)")
+        if filepath:
+            from src.core.report_generator import ReportGenerator
+            generator = ReportGenerator(self.env_mgr)
+            if filepath.endswith(".json"):
+                success = generator.export_json(filepath)
+            else:
+                success = generator.export_txt(filepath)
+                
+            if success:
+                QMessageBox.information(self, "Export Successful", f"Environment report successfully saved to:\n{filepath}")
+                self.env_mgr.logger.info(f"Environment report exported to {filepath}")
+            else:
+                QMessageBox.critical(self, "Export Failed", f"Failed to save environment report to:\n{filepath}")
+                self.env_mgr.logger.error(f"Failed to export environment report to {filepath}")
+
     def switch_page(self, page_id: str):
         mapping = {
             "dashboard": 0,
@@ -354,6 +396,31 @@ class MainWindow(QMainWindow):
         kpi_layout.addWidget(self.card_pm)
         layout.addLayout(kpi_layout)
         
+        # Action Buttons Row
+        action_layout = QHBoxLayout()
+        action_layout.setSpacing(10)
+        
+        btn_rescan = QPushButton("🔄 Rescan Environment")
+        btn_rescan.setProperty("class", "SecondaryBtn")
+        btn_rescan.setToolTip("Rerun the 5-tier discovery pipeline.")
+        btn_rescan.clicked.connect(self.trigger_scan)
+        
+        btn_doctor = QPushButton("🩺 Run Environment Doctor")
+        btn_doctor.setProperty("class", "AccentBtn")
+        btn_doctor.setToolTip("Run Environment Doctor to generate a diagnostic repair plan.")
+        btn_doctor.clicked.connect(self.run_doctor_gui)
+        
+        btn_export = QPushButton("💾 Export Environment Report")
+        btn_export.setProperty("class", "SecondaryBtn")
+        btn_export.setToolTip("Export diagnostic report to JSON.")
+        btn_export.clicked.connect(self.export_report_gui)
+        
+        action_layout.addWidget(btn_rescan)
+        action_layout.addWidget(btn_doctor)
+        action_layout.addWidget(btn_export)
+        action_layout.addStretch()
+        
+        layout.addLayout(action_layout)       
         # Actions Control Bar
         actions_card = QFrame()
         actions_card.setProperty("class", "Card")

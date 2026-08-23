@@ -106,3 +106,4 @@ All actions, warnings, and system discovery milestones are logged automatically 
 ```text
 logs/esim_manager.log
 ```
+

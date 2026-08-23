@@ -153,6 +153,14 @@ python -m src.main
   ```bash
   python -m src.main --scan
   ```
+- **Environment Doctor Diagnosis**:
+  ```bash
+  python -m src.main --doctor
+  ```
+- **Export Environment Report**:
+  ```bash
+  python -m src.main --report environment.json
+  ```
 - **EDA Workflow Profiles Evaluation**:
   ```bash
   python -m src.main --profiles

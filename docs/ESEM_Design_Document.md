@@ -280,3 +280,4 @@ Real machine discovery scan performed on Windows host machine confirmed:
 - Polkit GTK/Qt elevation integration for Linux.
 - Interactive dependency graph visualization.
 - One-click workflow profile remediation.
+
