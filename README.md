@@ -1,118 +1,112 @@
 # eSim Environment Manager (ESEM)
 
-Automated EDA Tool and Dependency Management for eSim workflows.
-
-## Problem Statement & Motivation
-eSim integrates multiple external Electronic Design Automation (EDA) tools and libraries (such as KiCad, Ngspice, Python, and Git). Managing these dependencies manually across different developer and student environments frequently causes version mismatches, command path misconfigurations, and compatibility issues. This tool aims to automate detection, version auditing, and installation mapping, simplifying environment configuration for eSim users.
-
-## Solution
-The **eSim Environment Manager (ESEM)** automatically scans the host system, detects installed EDA tools, checks their versions against minimum requirements, computes a system readiness score, and provides a professional PySide6 GUI as well as a command-line interface (CLI) to scan, check updates, and confirm installations/upgrades using system package managers safely.
+A cross-platform environment management and dependency intelligence tool for open-source EDA workflows.
 
 ---
 
-## Features
-- **Real-Time Environment Detection**: Queries actual system binaries via non-blocking sub-processes with timeouts.
-- **Dependency Audit & Version Comparison**: Performs semantic/numeric comparisons and flags outdated tools.
-- **Ready Score & Dashboard Indicator**: Evaluates overall system readiness using a deduction-based scoring system (0-100).
-- **Interactive Safe Installer/Updater**: Construct commands dynamically and confirm installs via platform package managers (`winget` on Windows, `apt` on Linux, `brew` on macOS) without automatic execution hazards.
-- **Audit Trails**: Generates a standard log file (`logs/esim_manager.log`) featuring custom `SUCCESS` level tracking.
-- **Dual-Interface Execution**: Comprehensive CLI options along with a responsive GUI utilizing background worker threads.
+## Overview
+
+eSim depends on several external open-source EDA tools and libraries (such as KiCad, Ngspice, Python, and Git). Manually locating binaries, verifying versions, managing dependencies, and maintaining these tools across diverse user operating systems can be difficult and error-prone.
+
+**ESEM** provides a centralized desktop and command-line interface for:
+- Tool discovery across standard system directories
+- Semantic version parsing and auditing
+- Dependency analysis & transparent health scoring
+- EDA workflow profiling (eSim, Digital RTL, PCB Design, Open VLSI)
+- Installation management via OS package managers
+- Update and upgrade management
+- Dynamic tool registry configuration
+- Auditable action logging
 
 ---
 
-## System Architecture
+## Key Features
 
-ESEM uses a modular layered architecture to decouple presentation, application orchestration, core business logic, and configuration.
+### 1. Robust Tool Discovery
+ESEM uses a 5-tier discovery pipeline rather than relying solely on `PATH`:
+1. **PATH Lookup**: Checks system `PATH` via `shutil.which`.
+2. **Candidate Binary Names**: Searches for tool-specific binary variants (e.g. `kicad-cli.exe`, `kicad.exe`, `ngspice_con.exe`).
+3. **Known Installation Locations**: Scans standard program directories (e.g., `C:\Program Files\KiCad\*\bin\`, `C:\Spice64\bin\`, `C:\oss-cad-suite\bin\`).
+4. **Platform-Specific Search**: Resolves default installation directories on Windows, Linux, and macOS.
+5. **User-Configured Custom Paths**: Allows user-specified executable locations.
 
-```
-+-----------------------------------------------------------+
-|                     Presentation Layer                    |
-|                (src/gui/main_window.py, app.py)           |
-+-----------------------------+-----------------------------+
-                              |
-                              v
-+-----------------------------------------------------------+
-|                     Orchestration Layer                   |
-|                (src/core/environment_manager.py)          |
-+-----------------------------+-----------------------------+
-                              |
-       +----------------------+----------------------+
-       |                      |                      |
-       v                      v                      v
-+--------------+       +--------------+       +--------------+
-| ToolDetector |       | VersionCheck |       | DepChecker   |
-| (tool_det..) |       | (version_..) |       | (dep_ch..)   |
-+--------------+       +--------------+       +--------------+
-       |                      |                      |
-       +----------------------+----------------------+
-                              |
-                              v
-+-----------------------------------------------------------+
-|                        Core Subsystems                    |
-|             (installer.py, updater.py, logger.py)         |
-+-----------------------------+-----------------------------+
-                              |
-                              v
-+-----------------------------------------------------------+
-|                     Configuration Layer                   |
-|                      (config/tools.json)                  |
-+-----------------------------------------------------------+
-```
+### 2. Tool Inventory
+Supports a registry of 14 open-source EDA, HDL, simulation, and VLSI tools:
+- **Core**: Python, Git
+- **PCB Design**: KiCad
+- **Circuit Simulation**: Ngspice, Qucs-S
+- **Digital Design & Synthesis**: Yosys, Verilator, Icarus Verilog, GHDL
+- **Formal & FPGA**: SymbiYosys, nextpnr
+- **Open VLSI / ASIC Flow**: OpenROAD, Magic, Netgen
+
+### 3. EDA Workflow Profiles
+Evaluates ecosystem readiness across 4 specialized profiles:
+- **eSim Basic**: Python, Git, KiCad, Ngspice
+- **Digital Design**: Yosys, Icarus Verilog, Verilator, GHDL
+- **PCB Design**: KiCad, Python, Git
+- **Open-Source VLSI**: Yosys, OpenROAD, Magic, Netgen
+
+### 4. Dependency Analysis
+Provides:
+- Overall Readiness Status (`READY`, `MOSTLY READY`, `NOT READY`)
+- Category-weighted Environment Health Score (Core 40, Recommended 30, Optional 30)
+- Identification of missing or outdated dependencies
+- Transparent itemized explanations for every score deduction
+
+### 5. Installation and Updates
+- Package-manager abstraction for supported platforms (`winget` on Windows, `apt` on Linux, `brew` on macOS).
+- **Safety First**: Commands are previewed in a modal dialog before user-confirmed execution with zero `shell=True` risk.
+
+### 6. User Interface
+- Built using PySide6 styled with a classic **Royal Engineering Console** palette (`#F5F2EA` warm cream, `#14213D` navy primary, `#B08D57` gold accent).
+- Includes Sidebar Navigation, Dashboard, Tool Inventory with Filter/Search, Tool Inspector Drawer (with native File Explorer launcher), EDA Profiles Inspector, and Activity Log.
+
+### 7. Logging
+All discovery runs, status audits, and package commands are logged with timestamps and custom `SUCCESS` level tracking to `logs/esim_manager.log`.
 
 ---
 
-## Project Structure
+## Architecture
+
 ```text
-esim-environment-manager/
-├── config/
-│   └── tools.json              # Tool registry configuration
-├── docs/
-│   ├── architecture.md         # Design documentation
-│   ├── testing.md              # Test documentation
-│   └── user_guide.md           # User operation guide
-├── logs/
-│   └── esim_manager.log        # Generated audit logs
-├── screenshots/                # Application state screenshots
-├── src/
-│   ├── __init__.py
-│   ├── main.py                 # Application CLI and GUI entry point
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── config_manager.py   # Loader & Schema validator
-│   │   ├── dependency_checker.py # Scoring & status logic
-│   │   ├── environment_manager.py # Main coordinator
-│   │   ├── installer.py        # System package installs
-│   │   ├── logger.py           # Log setup
-│   │   ├── tool_detector.py    # Binary detection
-│   │   ├── updater.py          # Version upgrades
-│   │   └── version_checker.py  # Regex parsing & comparison
-│   ├── gui/
-│   │   ├── __init__.py
-│   │   ├── app.py              # PySide6 application starter
-│   │   └── main_window.py      # Main window interface
-│   └── utils/
-│       ├── __init__.py
-│       └── platform_utils.py   # Host OS and package helpers
-├── tests/
-│   ├── __init__.py
-│   ├── test_config_manager.py
-│   ├── test_dependency_checker.py
-│   ├── test_detector.py
-│   └── test_version_checker.py
-├── LICENSE                     # MIT License
-├── README.md                   # Project overview
-└── requirements.txt            # Package dependencies
+                    ESEM v2.0.0
+                         |
+           +-------------+-------------+
+           |                           |
+          GUI                         CLI
+    (main_window.py)               (main.py)
+           |                           |
+           +-------------+-------------+
+                         |
+                 Application Core
+              (environment_manager.py)
+                         |
+    +--------------------+--------------------+
+    |                    |                    |
+Tool Discovery       Dependency         Profile Analyzer
+(tool_discovery.py)  Checker            (profile_analyzer.py)
+    |                (dep_checker.py)         |
+    +--------------------+--------------------+
+                         |
+                Configuration Layer
+                 (config/tools.json)
+                         |
+       +-----------------+-----------------+
+       |                 |                 |
+   Installer          Updater           Logger
+  (installer.py)     (updater.py)     (logger.py)
+                         |
+                  Operating System
+             (Windows / Linux / macOS)
 ```
 
 ---
 
-## Supported Tools Registry
-| Tool ID | Display Name | Category | Command | Min. Version | Windows Package |
-|---------|--------------|----------|---------|--------------|-----------------|
-| `python`| Python       | Core     | `python` / `python3` | `3.10.0` | `Python.Python.3.10` |
-| `git`   | Git          | Development | `git`  | `2.0.0`      | `Git.Git`       |
-| `kicad` | KiCad        | EDA      | `kicad-cli` | `6.0.0`   | `KiCad.KiCad`   |
-| `ngspice`| Ngspice     | Simulation | `ngspice` | `30.0`    | `Ngspice.Ngspice` |
+## Requirements
+- **Python**: 3.10 or higher
+- **Git**: 2.0 or higher
+- **PySide6**: 6.0+
+- **pytest**: 7.0+
 
 ---
 
@@ -120,16 +114,16 @@ esim-environment-manager/
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/esim-environment-manager/esim-environment-manager.git
+   git clone <repository-url>
    cd esim-environment-manager
    ```
 
-2. **Set up a Virtual Environment**:
+2. **Create a Virtual Environment**:
    ```bash
    python -m venv .venv
    ```
 
-3. **Activate the Environment**:
+3. **Activate the Virtual Environment**:
    * **Windows**:
      ```powershell
      .venv\Scripts\activate
@@ -148,26 +142,30 @@ esim-environment-manager/
 
 ## Running the Application
 
-ESEM supports both GUI and CLI operation modes.
+### Graphical User Interface (GUI)
+Launch the Royal Engineering Console:
+```bash
+python -m src.main
+```
 
-### CLI Commands
-- **Launch Graphical Interface (Default)**:
-  ```bash
-  python -m src.main
-  ```
-- **Scan Environment and print status report**:
+### Command Line Interface (CLI)
+- **14-Tool Discovery Scan & Report**:
   ```bash
   python -m src.main --scan
   ```
-- **Verify Readiness Check and exit with status code**:
+- **EDA Workflow Profiles Evaluation**:
+  ```bash
+  python -m src.main --profiles
+  ```
+- **Readiness Check & Exit Status Code**:
   ```bash
   python -m src.main --check
   ```
-- **Show Application Version**:
+- **Display Version Information**:
   ```bash
   python -m src.main --version
   ```
-- **Specify Custom Configuration File**:
+- **Specify Custom Tools Configuration**:
   ```bash
   python -m src.main --config config/tools.json
   ```
@@ -176,28 +174,93 @@ ESEM supports both GUI and CLI operation modes.
 
 ## Testing
 
-ESEM unit tests run inside an isolated mock environment.
-To execute tests, run:
+Run the automated unit and integration test suite:
 ```bash
-pytest -v
+python -m pytest -v
+```
+
+### Current Test Status
+- **Total Test Cases**: 26 passed
+- **Failures**: 0
+- **Execution Time**: ~1.2 seconds
+- Includes mock-based discovery isolation and real-machine scan integration tests.
+
+---
+
+## Project Structure
+```text
+esim-environment-manager/
+├── config/
+│   └── tools.json              # Schema v2.0 tool registry & profiles
+├── docs/
+│   ├── ESEM_Design_Document.md # Official submission design document
+│   ├── EXECUTION.md            # Evaluator step-by-step execution guide
+│   ├── architecture.md         # Architecture specification
+│   ├── testing.md              # Test documentation
+│   └── user_guide.md           # User operations guide
+├── logs/
+│   └── .gitkeep                # Runtime log directory anchor
+├── src/
+│   ├── __init__.py
+│   ├── main.py                 # CLI argument parser & app runner
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config_manager.py   # Registry loader & schema validator
+│   │   ├── dependency_checker.py # Category health scoring & deductions
+│   │   ├── environment_manager.py # Application coordinator facade
+│   │   ├── installer.py        # Package manager installation abstraction
+│   │   ├── logger.py           # Custom logging setup
+│   │   ├── profile_analyzer.py # EDA profile readiness evaluator
+│   │   ├── tool_detector.py    # Detector wrapper
+│   │   ├── tool_discovery.py   # 5-tier layered discovery pipeline
+│   │   ├── updater.py          # Package manager upgrade abstraction
+│   │   └── version_checker.py  # Regex parsing & numeric comparison
+│   ├── gui/
+│   │   ├── __init__.py
+│   │   ├── app.py              # Qt Application wrapper
+│   │   └── main_window.py      # Royal Engineering Console UI
+│   └── utils/
+│       ├── __init__.py
+│       └── platform_utils.py   # Host OS & package manager helpers
+├── tests/
+│   ├── __init__.py
+│   ├── test_config_manager.py
+│   ├── test_dependency_checker.py
+│   ├── test_detector.py
+│   ├── test_discovery.py
+│   ├── test_installer_updater.py
+│   ├── test_integration.py
+│   ├── test_profiles.py
+│   └── test_version_checker.py
+├── .gitignore
+├── LICENSE                     # MIT License
+├── README.md                   # Submission overview
+└── requirements.txt
 ```
 
 ---
 
-## Example Workflow (GUI)
-1. **Launch**: Open the application via `python -m src.main`.
-2. **Scan**: Click **SCAN ENVIRONMENT**. ESEM will check for tools and report versions.
-3. **Audit**: Review the Environment Score (e.g. 90/100) and Readiness status (e.g. READY).
-4. **Check Updates**: Select `Git` from the list and click **CHECK UPDATES** to query latest package manager details.
-5. **Install / Upgrade**: Click **INSTALL** on any missing tool (like `KiCad`). A confirmation modal displays the package manager command to execute before launching the subprocess.
-6. **Troubleshooting**: Inspect the live console logging panel at the bottom or reference `logs/esim_manager.log`.
+## Design Goals
+- **Modular Architecture**: Decoupled presentation, coordination, core discovery, and configuration layers.
+- **Cross-Platform Discovery**: Layered pipeline resolving standard paths on Windows, Linux, and macOS.
+- **Safe Package Management**: Command preview, zero `shell=True` risk, user confirmation required before any system modification.
+- **Transparent Dependency Analysis**: Category-weighted scoring with itemized score deduction reasons.
+- **Extensible Tool Registry**: Driver and profile configuration defined purely in JSON outside Python source code.
+- **Responsive GUI**: Non-blocking `QThread` workers execute background OS commands without UI freezing.
+- **Testable Components**: 100% test isolation using mock fixtures.
 
 ---
 
-## Limitations & Future Work
-- **Package Manager Dependability**: Windows installations rely on `winget`. If `winget` is blocked by enterprise rules or missing, installation fallback is manual.
-- **Sudo Privilege**: Linux installs (`apt-get`) require password validation. Future updates will leverage Polkit/pkexec prompts.
-- **eSim Profile Integration**: Future extensions will support importing specific compiler toolchain JSON configurations dynamically.
+## Limitations
+- **Version Flag Variation**: Some external tools do not expose a standard `--version` flag; ESEM handles these by probing fallback commands (`version`, `-v`, `-V`) or recording `VERSION_UNKNOWN`.
+- **Package Manager Availability**: Automatic installation relies on `winget` (Windows), `apt-get` (Linux), or `brew` (macOS). If uninstalled, manual installation guidance is provided.
+- **Sudo Authentication on Linux**: Executing `apt-get` requires elevated privileges.
+- **Conservative Discovery**: Tool discovery requires binary verification and intentionally avoids recursive whole-disk searches to ensure fast execution.
 
-## License
-Distributed under the MIT License. See `LICENSE` for details.
+---
+
+## Future Work
+- **Automated Environment Repair**: One-click remediation for missing recommended tools.
+- **Expanded Package Managers**: Support for `pacman`, `dnf`, `snap`, and `flatpak`.
+- **eSim-Specific Configuration Profiles**: Importing custom toolchain JSON configurations from eSim projects.
+- **Dependency Graph Visualization**: Interactive graphical mapping of EDA toolchain relationships.

@@ -18,9 +18,7 @@ class ToolDiscovery:
         """Expands environment variables and glob wildcards in path patterns."""
         expanded = []
         for pattern in patterns:
-            # Expand environment variables like %ProgramFiles%, %LOCALAPPDATA%
             exp_pattern = os.path.expandvars(pattern)
-            # Glob search if wildcard exists
             if "*" in exp_pattern:
                 matches = glob.glob(exp_pattern, recursive=True)
                 expanded.extend(matches)
@@ -29,11 +27,7 @@ class ToolDiscovery:
         return expanded
 
     def find_on_path(self, executable_names: List[str]) -> Optional[Tuple[str, str, int]]:
-        """Tier 1: Checks PATH for candidate executable names.
-        
-        Returns:
-            Tuple[path, source, confidence] or None
-        """
+        """Tier 1: Checks PATH for candidate executable names."""
         for exe_name in executable_names:
             found_path = shutil.which(exe_name)
             if found_path:
@@ -41,11 +35,7 @@ class ToolDiscovery:
         return None
 
     def find_custom_paths(self, custom_paths: List[str]) -> Optional[Tuple[str, str, int]]:
-        """Tier 2: Checks user-configured custom paths.
-        
-        Returns:
-            Tuple[path, source, confidence] or None
-        """
+        """Tier 2: Checks user-configured custom paths."""
         for path in custom_paths:
             exp_path = os.path.expandvars(path)
             if os.path.isfile(exp_path) and os.access(exp_path, os.X_OK):
@@ -53,15 +43,10 @@ class ToolDiscovery:
         return None
 
     def find_known_paths(self, known_patterns: List[str]) -> Optional[Tuple[str, str, int]]:
-        """Tier 3: Checks known installation patterns (e.g. Program Files globs).
-        
-        Returns:
-            Tuple[path, source, confidence] or None
-        """
+        """Tier 3: Checks known installation patterns."""
         candidate_paths = self.expand_path_patterns(known_patterns)
         for path in candidate_paths:
             if os.path.isfile(path):
-                # Verify it's executable (or on Windows, .exe/.bat/.cmd)
                 if detect_platform() == "windows" or os.access(path, os.X_OK):
                     return (os.path.abspath(path), "known_install_path", 95)
         return None
@@ -133,11 +118,7 @@ class ToolDiscovery:
         return None
 
     def query_version(self, exec_path: str, version_commands: List[List[str]]) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-        """Queries the executable version using preferred and fallback command flags.
-        
-        Returns:
-            Tuple[raw_output, parsed_version, error_message]
-        """
+        """Queries the executable version using preferred and fallback command flags."""
         if not version_commands:
             version_commands = [["--version"]]
 
@@ -155,10 +136,7 @@ class ToolDiscovery:
                 raw_out = (res.stdout + res.stderr).strip()
                 if raw_out:
                     parsed = VersionChecker.extract_version(raw_out)
-                    if parsed:
-                        return raw_out, parsed, None
-                    # If raw_out present but no version parsed, return raw_out
-                    return raw_out, None, None
+                    return raw_out, parsed, None
             except subprocess.TimeoutExpired:
                 continue
             except PermissionError as e:
@@ -166,22 +144,13 @@ class ToolDiscovery:
             except Exception as e:
                 return None, None, str(e)
 
-        return None, None, "Failed to retrieve version from executable"
+        return None, None, "Version flag query produced no parseable output"
 
     def discover(self, tool_id: str, tool_def: Dict[str, Any]) -> Dict[str, Any]:
-        """Discovers a tool on the local machine using the 5-tier pipeline.
-        
-        Args:
-            tool_id (str): Tool identifier.
-            tool_def (Dict[str, Any]): Tool configuration map.
-            
-        Returns:
-            Dict[str, Any]: Detailed discovery result matching output schema.
-        """
+        """Discovers a tool using the 5-tier pipeline and sets VERSION_UNKNOWN when binary exists."""
         display_name = tool_def.get("display_name", tool_id.capitalize())
         plat = detect_platform()
         
-        # Candidate executable names
         exe_names = tool_def.get("executable_names", [])
         if not exe_names:
             base_cmd = tool_def.get("command", tool_id)
@@ -189,7 +158,6 @@ class ToolDiscovery:
                 base_cmd = tool_def["commands"].get(plat, base_cmd)
             exe_names = [base_cmd]
 
-        # Add .exe extensions on Windows if not present
         if plat == "windows":
             formatted = []
             for name in exe_names:
@@ -198,11 +166,9 @@ class ToolDiscovery:
                     formatted.append(f"{name}.exe")
             exe_names = formatted
 
-        # Known path patterns from config
         known_patterns = tool_def.get(f"{plat}_paths", [])
         custom_paths = tool_def.get("custom_paths", [])
 
-        # Pipeline execution
         location_info = (
             self.find_on_path(exe_names) or
             self.find_custom_paths(custom_paths) or
@@ -237,10 +203,8 @@ class ToolDiscovery:
         result["executable_path"] = path
         result["source"] = source
         result["confidence"] = confidence
-        result["status"] = "DETECTED"
 
-        # Version query
-        # Support version_command or version_commands
+        # Version querying
         ver_cmds = []
         if "version_command" in tool_def:
             ver_cmds.append(tool_def["version_command"])
@@ -249,7 +213,6 @@ class ToolDiscovery:
         if "version_arguments" in tool_def:
             ver_cmds.append(tool_def["version_arguments"])
             
-        # Default fallbacks
         if not ver_cmds:
             ver_cmds = [["--version"], ["version"], ["-v"], ["-V"]]
 
@@ -258,23 +221,18 @@ class ToolDiscovery:
         result["parsed_version"] = parsed_v
         result["error"] = err
 
-        if err and not raw_v:
-            result["status"] = "ERROR"
-            self.logger.error(f"Tool discovery: '{display_name}' found at {path} but version query failed: {err}")
-        elif not parsed_v and raw_v:
-            result["status"] = "UNKNOWN"
-            self.logger.warning(f"Tool discovery: '{display_name}' found at {path} (version unparseable: {raw_v[:50]})")
-        else:
+        if parsed_v:
+            result["status"] = "DETECTED"
             self.logger.info(f"Tool discovery: '{display_name}' ({parsed_v}) detected via {source} at {path}")
+        else:
+            # Binary exists on disk, but version string could not be extracted
+            result["status"] = "VERSION_UNKNOWN"
+            self.logger.warning(f"Tool discovery: '{display_name}' binary detected via {source} at {path} (version string unknown)")
 
         return result
 
     def discover_all(self, tools_config: Dict[str, Dict[str, Any]] = None) -> Dict[str, Dict[str, Any]]:
-        """Discovers all tools in the configuration dictionary.
-        
-        Returns:
-            Dict[str, Dict[str, Any]]: Dictionary of tool_id to discovery results.
-        """
+        """Discovers all tools in the configuration dictionary."""
         tools_to_check = tools_config if tools_config is not None else self.tools
         self.logger.info("Layered tool discovery pipeline started")
         results = {}
@@ -282,4 +240,3 @@ class ToolDiscovery:
             results[tool_id] = self.discover(tool_id, tool_def)
         self.logger.info("Layered tool discovery pipeline finished")
         return results
-

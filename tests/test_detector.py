@@ -106,5 +106,5 @@ def test_detect_failed_version_command():
         assert results["git"]["installed"] is True
         assert results["git"]["executable_path"] == expected_path
         assert results["git"]["parsed_version"] is None
-        assert results["git"]["status"] == "ERROR"
+        assert results["git"]["status"] == "VERSION_UNKNOWN"
         assert "Process execution error" in results["git"]["error"]

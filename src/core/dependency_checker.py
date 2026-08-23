@@ -22,10 +22,10 @@ class DependencyChecker:
                     "status": "ERROR",
                     "message": det_error or "An error occurred during detection"
                 }
-            elif det_status == "UNKNOWN":
+            elif det_status in ("UNKNOWN", "VERSION_UNKNOWN"):
                 results[tool_id] = {
-                    "status": "UNKNOWN",
-                    "message": "Tool installed but version could not be parsed"
+                    "status": "VERSION_UNKNOWN",
+                    "message": "Binary detected on system, version output string unknown"
                 }
             elif not installed:
                 if importance == "REQUIRED" or required:
@@ -52,12 +52,7 @@ class DependencyChecker:
         return results
 
     def calculate_score(self, check_results: Dict[str, Dict[str, Any]]) -> Tuple[int, str, List[str]]:
-        """Calculates environment score, readiness status, and transparent deduction reasons.
-        
-        Returns:
-            Tuple[int, str, List[str]]: (score, readiness, reasons_list)
-        """
-        # Bucket tools by importance
+        """Calculates environment score, readiness status, and transparent deduction reasons."""
         core_tools = []
         rec_tools = []
         opt_tools = []
@@ -73,7 +68,6 @@ class DependencyChecker:
 
         reasons = []
 
-        # Category budgets (Core: 40 pts, Recommended: 30 pts, Optional: 30 pts)
         core_pts = 40.0
         core_deduct_per_missing = 40.0 / len(core_tools) if core_tools else 0.0
 
@@ -95,9 +89,9 @@ class DependencyChecker:
             elif status == "OUTDATED":
                 core_pts -= (core_deduct_per_missing * 0.5)
                 reasons.append(f"Required core tool '{name}' is outdated (-{int(core_deduct_per_missing * 0.5)} pts)")
-            elif status in ("UNKNOWN", "ERROR"):
+            elif status in ("UNKNOWN", "VERSION_UNKNOWN", "ERROR"):
                 core_pts -= (core_deduct_per_missing * 0.25)
-                reasons.append(f"Core tool '{name}' status is {status} (-{int(core_deduct_per_missing * 0.25)} pts)")
+                reasons.append(f"Core tool '{name}' detected, version string is unknown (-{int(core_deduct_per_missing * 0.25)} pts)")
 
         # Evaluate Recommended Tools
         for tid in rec_tools:
@@ -111,6 +105,9 @@ class DependencyChecker:
             elif status == "OUTDATED":
                 rec_pts -= (rec_deduct_per_missing * 0.5)
                 reasons.append(f"Recommended tool '{name}' is outdated (-{int(rec_deduct_per_missing * 0.5)} pts)")
+            elif status in ("UNKNOWN", "VERSION_UNKNOWN"):
+                rec_pts -= (rec_deduct_per_missing * 0.25)
+                reasons.append(f"Recommended tool '{name}' detected, version string is unknown (-{int(rec_deduct_per_missing * 0.25)} pts)")
 
         # Evaluate Optional Tools
         for tid in opt_tools:
@@ -121,6 +118,9 @@ class DependencyChecker:
             if status in ("MISSING", "OPTIONAL"):
                 opt_pts -= opt_deduct_per_missing
                 reasons.append(f"Optional tool '{name}' is missing (-{int(opt_deduct_per_missing)} pts)")
+            elif status in ("UNKNOWN", "VERSION_UNKNOWN"):
+                opt_pts -= (opt_deduct_per_missing * 0.25)
+                reasons.append(f"Optional tool '{name}' detected, version string is unknown (-{int(opt_deduct_per_missing * 0.25)} pts)")
 
         total_score = max(0, min(100, int(round(core_pts + rec_pts + opt_pts))))
 
