@@ -1,0 +1,73 @@
+{
+  "tools": [
+    {
+      "id": "python",
+      "display_name": "Python",
+      "category": "Core",
+      "command": "python",
+      "commands": {
+        "windows": "python",
+        "linux": "python3",
+        "macos": "python3"
+      },
+      "version_arguments": ["--version"],
+      "required": true,
+      "minimum_version": "3.10.0",
+      "install_methods": ["winget", "apt", "brew"],
+      "update_methods": ["winget", "apt", "brew"],
+      "packages": {
+        "windows": "Python.Python.3.10",
+        "linux": "python3",
+        "macos": "python3"
+      }
+    },
+    {
+      "id": "git",
+      "display_name": "Git",
+      "category": "Development",
+      "command": "git",
+      "version_arguments": ["--version"],
+      "required": true,
+      "minimum_version": "2.0.0",
+      "install_methods": ["winget", "apt", "brew"],
+      "update_methods": ["winget", "apt", "brew"],
+      "packages": {
+        "windows": "Git.Git",
+        "linux": "git",
+        "macos": "git"
+      }
+    },
+    {
+      "id": "kicad",
+      "display_name": "KiCad",
+      "category": "EDA",
+      "command": "kicad-cli",
+      "version_arguments": ["--version"],
+      "required": false,
+      "minimum_version": "6.0.0",
+      "install_methods": ["winget", "apt", "brew"],
+      "update_methods": ["winget", "apt", "brew"],
+      "packages": {
+        "windows": "KiCad.KiCad",
+        "linux": "kicad",
+        "macos": "kicad"
+      }
+    },
+    {
+      "id": "ngspice",
+      "display_name": "Ngspice",
+      "category": "Simulation",
+      "command": "ngspice",
+      "version_arguments": ["-v"],
+      "required": false,
+      "minimum_version": "30.0",
+      "install_methods": ["winget", "apt", "brew"],
+      "update_methods": ["winget", "apt", "brew"],
+      "packages": {
+        "windows": "Ngspice.Ngspice",
+        "linux": "ngspice",
+        "macos": "ngspice"
+      }
+    }
+  ]
+}
